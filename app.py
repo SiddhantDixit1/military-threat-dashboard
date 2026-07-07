@@ -3,11 +3,17 @@ import pandas as pd
 import pydeck as pdk
 from data_pipeline import generate_intelligence_data
 from model_engine import ThreatModelEngine
+# Import our brand new UI components file
+import ui_components 
 
 # App configuration
 st.set_page_config(page_title="Intel Threat Command Dashboard", layout="wide")
 
-st.title("🛡️ AI-Based Military Intelligence & Threat Analysis Dashboard")
+# 1. Apply our custom UI/UX styles
+ui_components.apply_custom_theme()
+
+# Title and Layout Header
+st.title("🛡️ AI Military Intelligence Dashboard")
 st.caption("Strategic Analytics, Multi-Modal Sensor Fusion, and Explainable AI (XAI) Prototype")
 st.markdown("---")
 
@@ -18,11 +24,11 @@ def load_engine():
 
 engine = load_engine()
 
-# Load a pool of live data points
+# Load live data pool
 raw_data = generate_intelligence_data(50)
 
-# Sidebar configurations
-st.sidebar.header("🕹️ Tactical Control Panel")
+# 2. Render Sidebar using UI components
+ui_components.render_sidebar_header()
 severity_filter = st.sidebar.multiselect(
     "Filter by Threat Type:",
     options=list(raw_data['threat_type'].unique()),
@@ -58,7 +64,7 @@ if not filtered_data.empty:
                 'ScatterplotLayer',
                 data=filtered_data,
                 get_position='[longitude, latitude]',
-                get_color='[220, 53, 69, 200]', # Red alert color
+                get_color='[220, 53, 69, 200]', 
                 get_radius=4000,
                 pickable=True
             ),
@@ -80,15 +86,18 @@ target_index = st.selectbox("Select Target Stream Index for Deep Diagnostics:", 
 
 if target_index is not None:
     selected_row = filtered_data.loc[[target_index]]
-    
-    # Run the ML engine logic
     analysis = engine.predict_threat(selected_row)
     
     diag_col1, diag_col2 = st.columns(2)
     with diag_col1:
-        st.subheader(f"Classification: **{analysis['predicted_threat']}**")
+        # Wrap this block inside our custom UI HTML card
+        st.markdown(f"""
+            <div class='tactical-card'>
+                <h4>Classification Output</h4>
+                <h3><b>{analysis['predicted_threat']}</b></h3>
+            </div>
+        """, unsafe_allow_html=True)
         
-        # Color code risk indicator bar
         score = analysis['risk_score']
         if score > 75:
             st.error(f"Calculated Threat Risk Score: {score}% (CRITICAL)")
@@ -102,4 +111,6 @@ if target_index is not None:
         st.markdown("**Key Risk Drivers Triggering This Assessment:**")
         for driver in analysis['top_drivers']:
             st.markdown(f"- 🔴 `{driver.replace('_', ' ').upper()}`")
-        st.caption("These specific variables provided the highest information gain inside the Random Forest matrix.")
+
+# 3. Add footer
+ui_components.render_footer()
