@@ -34,10 +34,10 @@ def apply_custom_theme():
 
 def render_sidebar_header():
     """Renders a polished sidebar header."""
-    st.sidebar.image("https://img.icons8.com/radar", width=50, output_format="PNG", error_handling="skip")
+    # Using a reliable open-source icon URL with supported parameters
+    st.sidebar.image("https://img.icons8.com/ios-filled/100/ffffff/radar.png", width=50)
     st.sidebar.markdown("# 🧠 COMMAND CONSOLE")
     st.sidebar.markdown("---")
-
 def render_footer():
     """Renders a professional portfolio footer."""
     st.markdown("---")
