@@ -124,8 +124,16 @@ with xai_dash:
     with global_col1:
         st.markdown("**SHAP Summary Plot (Global Density & Feature Impacts)**")
         fig, ax = plt.subplots(figsize=(6, 4))
+        
+        # Extract the exact array slice for the active predicted class
+        raw_global_slice = global_shap_matrix[metrics['predicted_class_index']]
+        
+        # If the shape is transposed (features, samples), flip it to (samples, features)
+        if raw_global_slice.shape[0] == len(engine.features) and raw_global_slice.shape[0] != X_sample.shape[0]:
+            raw_global_slice = raw_global_slice.T
+            
         shap.summary_plot(
-            global_shap_matrix[metrics['predicted_class_index']], 
+            raw_global_slice, 
             X_sample, 
             feature_names=engine.features, 
             show=False
