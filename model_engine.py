@@ -52,12 +52,19 @@ class TacticalModelEngine:
         threat_class = self.label_encoder.inverse_transform([pred_encoded])[0]
         confidence = pred_prob[pred_encoded] * 100
         
-        # Compute exact SHAP force array for the predicted class
-        # shap_values shape: [classes][samples, features]
+        # Compute raw SHAP matrix safely
         raw_shap = self.explainer.shap_values(X_live_scaled)
         
-        # Isolate the explicit SHAP array matching the predicted class index
-        class_shap_values = raw_shap[pred_encoded][0] 
+        # Robust handling for list vs. 3D array output variants
+        if isinstance(raw_shap, list):
+            # If it's a list of arrays (one per class), select the correct class array
+            class_shap_values = raw_shap[pred_encoded][0]
+        elif len(raw_shap.shape) == 3:
+            # If it's a 3D array with shape (samples, features, classes)
+            class_shap_values = raw_shap[0, :, pred_encoded]
+        else:
+            # Fallback for standard 2D arrays
+            class_shap_values = raw_shap[0] 
         
         # Build Diagnostic DataFrame
         diag_df = pd.DataFrame({
