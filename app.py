@@ -125,19 +125,33 @@ with xai_dash:
         st.markdown("**SHAP Summary Plot (Global Density & Feature Impacts)**")
         fig, ax = plt.subplots(figsize=(6, 4))
         
-        # Extract the exact array slice for the active predicted class
-        raw_global_slice = global_shap_matrix[metrics['predicted_class_index']]
+        # Isolate the exact class index we want to plot globally
+        class_idx = metrics['predicted_class_index']
         
-        # If the shape is transposed (features, samples), flip it to (samples, features)
-        if raw_global_slice.shape[0] == len(engine.features) and raw_global_slice.shape[0] != X_sample.shape[0]:
-            raw_global_slice = raw_global_slice.T
+        # Extract the global array slice safely
+        global_slice = global_shap_matrix[class_idx]
+        
+        # If SHAP nested it as (samples, features) inside a list, extract the first sample batch
+        if isinstance(global_slice, list) or len(global_slice.shape) == 3:
+            global_slice = global_slice[0]
             
-        shap.summary_plot(
-            raw_global_slice, 
-            X_sample, 
-            feature_names=engine.features, 
-            show=False
-        )
+        # Force the orientation check: if rows match features, transpose it to match X_sample
+        if global_slice.shape[0] == len(engine.features) and global_slice.shape[0] != X_sample.shape[0]:
+            global_slice = global_slice.T
+            
+        # Build a robust, standard multi-row Explanation object that SHAP cannot reject
+        try:
+            global_exp = shap.Explanation(
+                values=global_slice,
+                base_values=np.repeat(engine.explainer.expected_value[class_idx], X_sample.shape[0]),
+                data=X_sample.values,
+                feature_names=engine.features
+            )
+            shap.plots.beeswarm(global_exp, max_display=10, show=False)
+        except Exception:
+            # Flawless fallback to standard summary plot if beeswarm rejects the custom object
+            shap.summary_plot(global_slice, X_sample, feature_names=engine.features, show=False)
+            
         st.pyplot(fig, clear_figure=True)
         
     with global_col2:
